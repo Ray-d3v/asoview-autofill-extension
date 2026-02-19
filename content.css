@@ -1,0 +1,82 @@
+.asv-autofill-root {
+  position: fixed;
+  top: 14px;
+  right: 14px;
+  z-index: 2147483000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 184px;
+  font-family: "Segoe UI", Arial, sans-serif;
+}
+
+.asv-autofill-btn {
+  width: 100%;
+  margin: 0;
+  padding: 10px 12px;
+  border: 0;
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.2;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.26);
+}
+
+.asv-autofill-btn:hover {
+  filter: brightness(1.04);
+}
+
+.asv-autofill-btn:active {
+  transform: translateY(1px);
+}
+
+.asv-autofill-btn--purchase {
+  background: #0b79d0;
+}
+
+.asv-autofill-btn--card {
+  background: #18663a;
+}
+
+.asv-autofill-toast-root {
+  position: fixed;
+  top: 106px;
+  right: 14px;
+  z-index: 2147483001;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 280px;
+  pointer-events: none;
+}
+
+.asv-autofill-toast {
+  padding: 10px 12px;
+  border-radius: 8px;
+  color: #ffffff;
+  font-family: "Segoe UI", Arial, sans-serif;
+  font-size: 12px;
+  line-height: 1.4;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.24);
+  opacity: 1;
+  transition: opacity 0.2s ease;
+}
+
+.asv-autofill-toast--success {
+  background: rgba(24, 102, 58, 0.95);
+}
+
+.asv-autofill-toast--info {
+  background: rgba(11, 121, 208, 0.95);
+}
+
+.asv-autofill-toast--warn {
+  background: rgba(173, 94, 0, 0.95);
+}
+
+.asv-autofill-toast--hide {
+  opacity: 0;
+}

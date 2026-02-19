@@ -1,0 +1,156 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>アソビュー自動入力オプション</title>
+    <link rel="stylesheet" href="options.css">
+  </head>
+  <body>
+    <main class="container">
+      <h1>アソビュー自動入力 設定</h1>
+      <p class="description">
+        ここで保存した値は、ページ右上の自動入力ボタン実行時に使用されます。
+      </p>
+      <p class="warning">
+        カード情報は <code>chrome.storage.local</code> に平文で保存されます。
+      </p>
+
+      <form id="settings-form">
+        <section class="card">
+          <h2>購入者情報</h2>
+          <div class="grid">
+            <label>姓
+              <input id="purchase-last-name" type="text" autocomplete="family-name">
+            </label>
+            <label>名
+              <input id="purchase-first-name" type="text" autocomplete="given-name">
+            </label>
+            <label>セイ
+              <input id="purchase-last-name-kana" type="text" autocomplete="off">
+            </label>
+            <label>メイ
+              <input id="purchase-first-name-kana" type="text" autocomplete="off">
+            </label>
+            <label>電話番号(前)
+              <input id="purchase-phone-head" type="text" inputmode="numeric" autocomplete="tel-area-code">
+            </label>
+            <label>電話番号(中)
+              <input id="purchase-phone-center" type="text" inputmode="numeric" autocomplete="tel-local-prefix">
+            </label>
+            <label>電話番号(後)
+              <input id="purchase-phone-tail" type="text" inputmode="numeric" autocomplete="tel-local-suffix">
+            </label>
+            <label>性別
+              <select id="purchase-gender">
+                <option value="">未設定</option>
+                <option value="male">男性</option>
+                <option value="female">女性</option>
+              </select>
+            </label>
+            <label>生年
+              <input id="purchase-birth-year" type="text" inputmode="numeric" placeholder="1990">
+            </label>
+            <label>生月
+              <input id="purchase-birth-month" type="text" inputmode="numeric" placeholder="1-12">
+            </label>
+            <label>生日
+              <input id="purchase-birth-day" type="text" inputmode="numeric" placeholder="1-31">
+            </label>
+            <label>郵便番号(前)
+              <input id="purchase-postal-head" type="text" inputmode="numeric" autocomplete="postal-code">
+            </label>
+            <label>郵便番号(後)
+              <input id="purchase-postal-tail" type="text" inputmode="numeric" autocomplete="postal-code">
+            </label>
+            <label class="span-two">都道府県
+              <select id="purchase-prefecture-code">
+                <option value="">未設定</option>
+                <option value="prf010000">北海道</option>
+                <option value="prf020000">青森県</option>
+                <option value="prf030000">岩手県</option>
+                <option value="prf040000">宮城県</option>
+                <option value="prf050000">秋田県</option>
+                <option value="prf060000">山形県</option>
+                <option value="prf070000">福島県</option>
+                <option value="prf080000">栃木県</option>
+                <option value="prf090000">群馬県</option>
+                <option value="prf100000">茨城県</option>
+                <option value="prf110000">埼玉県</option>
+                <option value="prf120000">千葉県</option>
+                <option value="prf130000">東京都</option>
+                <option value="prf140000">神奈川県</option>
+                <option value="prf150000">山梨県</option>
+                <option value="prf160000">長野県</option>
+                <option value="prf170000">新潟県</option>
+                <option value="prf180000">富山県</option>
+                <option value="prf190000">石川県</option>
+                <option value="prf200000">福井県</option>
+                <option value="prf210000">静岡県</option>
+                <option value="prf220000">岐阜県</option>
+                <option value="prf230000">愛知県</option>
+                <option value="prf240000">三重県</option>
+                <option value="prf250000">滋賀県</option>
+                <option value="prf260000">京都府</option>
+                <option value="prf270000">大阪府</option>
+                <option value="prf280000">兵庫県</option>
+                <option value="prf290000">奈良県</option>
+                <option value="prf300000">和歌山県</option>
+                <option value="prf310000">鳥取県</option>
+                <option value="prf320000">島根県</option>
+                <option value="prf330000">岡山県</option>
+                <option value="prf340000">広島県</option>
+                <option value="prf350000">山口県</option>
+                <option value="prf360000">徳島県</option>
+                <option value="prf370000">香川県</option>
+                <option value="prf380000">愛媛県</option>
+                <option value="prf390000">高知県</option>
+                <option value="prf400000">福岡県</option>
+                <option value="prf410000">佐賀県</option>
+                <option value="prf420000">長崎県</option>
+                <option value="prf430000">熊本県</option>
+                <option value="prf440000">大分県</option>
+                <option value="prf450000">宮崎県</option>
+                <option value="prf460000">鹿児島県</option>
+                <option value="prf470000">沖縄県</option>
+                <option value="prf990000">海外</option>
+              </select>
+            </label>
+            <label class="span-two">市区町村以下
+              <input id="purchase-address-line" type="text" autocomplete="street-address">
+            </label>
+          </div>
+        </section>
+
+        <section class="card">
+          <h2>カード情報</h2>
+          <div class="grid">
+            <label class="span-two">カード番号
+              <input id="card-number" type="text" inputmode="numeric" autocomplete="cc-number">
+            </label>
+            <label>有効期限(月)
+              <input id="card-exp-month" type="text" inputmode="numeric" autocomplete="cc-exp-month">
+            </label>
+            <label>有効期限(年)
+              <input id="card-exp-year" type="text" inputmode="numeric" autocomplete="cc-exp-year">
+            </label>
+            <label>CVC
+              <input id="card-cvc" type="text" inputmode="numeric" autocomplete="cc-csc">
+            </label>
+            <label class="span-two">カード名義
+              <input id="card-holder-name" type="text" autocomplete="cc-name">
+            </label>
+          </div>
+        </section>
+
+        <div class="actions">
+          <button type="submit" class="primary">保存</button>
+          <button type="button" id="reset-button" class="secondary">空欄にリセット</button>
+        </div>
+        <p id="status" class="status" aria-live="polite"></p>
+      </form>
+    </main>
+
+    <script src="options.js"></script>
+  </body>
+</html>
