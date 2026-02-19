@@ -10,13 +10,40 @@
     <main class="container">
       <h1>アソビュー自動入力 設定</h1>
       <p class="description">
-        ここで保存した値は、ページ右上の自動入力ボタン実行時に使用されます。
+        ここで保存した値は、ページ表示時の自動入力と右上ボタンの手動入力に使用されます。
       </p>
       <p class="warning">
         カード情報は <code>chrome.storage.local</code> に平文で保存されます。
       </p>
 
       <form id="settings-form">
+        <section class="card">
+          <h2>自動実行</h2>
+          <div class="auto-fill-switches">
+            <label class="checkbox-row">
+              <input id="auto-fill-enabled" type="checkbox">
+              ページ表示時に自動入力を実行する
+            </label>
+            <label class="checkbox-row">
+              <input id="auto-fill-run-purchase" type="checkbox">
+              購入者情報を自動入力する
+            </label>
+            <label class="checkbox-row">
+              <input id="auto-fill-run-card" type="checkbox">
+              カード情報を自動入力する
+            </label>
+          </div>
+          <div class="grid auto-fill-grid">
+            <label>再試行回数
+              <input id="auto-fill-retry-max-attempts" type="number" min="1" max="60" step="1">
+            </label>
+            <label>再試行待機(ms)
+              <input id="auto-fill-retry-base-delay-ms" type="number" min="80" max="3000" step="10">
+            </label>
+          </div>
+          <p class="note">既に値が入っている欄は上書きせず、空欄のみ入力します。</p>
+        </section>
+
         <section class="card">
           <h2>購入者情報</h2>
           <div class="grid">

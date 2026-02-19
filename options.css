@@ -45,6 +45,39 @@ h2 {
   gap: 12px;
 }
 
+.auto-fill-switches {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 12px;
+}
+
+.checkbox-row {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 10px;
+  font-size: 14px;
+}
+
+.checkbox-row input[type="checkbox"] {
+  width: 18px;
+  min-height: 18px;
+  margin: 0;
+  padding: 0;
+  flex: 0 0 auto;
+}
+
+.auto-fill-grid {
+  margin-top: 4px;
+}
+
+.note {
+  margin: 12px 0 0;
+  color: #3a566b;
+  font-size: 13px;
+}
+
 label {
   display: flex;
   flex-direction: column;

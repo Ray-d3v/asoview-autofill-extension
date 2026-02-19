@@ -7,6 +7,10 @@
   const MESSAGE_SOURCE = "asv-autofill";
   const MSG_CARD_FILL_REQUEST = "ASV_CARD_FILL_REQUEST";
   const MSG_CARD_FILL_RESULT = "ASV_CARD_FILL_RESULT";
+  const AUTO_FILL_MIN_ATTEMPTS = 1;
+  const AUTO_FILL_MAX_ATTEMPTS = 60;
+  const AUTO_FILL_MIN_DELAY_MS = 80;
+  const AUTO_FILL_MAX_DELAY_MS = 3000;
 
   const DEFAULT_SETTINGS = {
     purchase: {
@@ -32,6 +36,13 @@
       expYear: "",
       cvc: "",
       holderName: ""
+    },
+    autoFill: {
+      enabled: true,
+      runPurchase: true,
+      runCard: true,
+      retryMaxAttempts: 20,
+      retryBaseDelayMs: 220
     }
   };
 
@@ -61,6 +72,8 @@
   ];
 
   let cardFrameMessageListenerBound = false;
+  let hasAutoFillRun = false;
+  let autoFillInProgress = false;
 
   function cloneDefaultSettings() {
     return JSON.parse(JSON.stringify(DEFAULT_SETTINGS));
@@ -68,6 +81,29 @@
 
   function normalizeString(value) {
     return typeof value === "string" ? value.trim() : "";
+  }
+
+  function normalizeBoolean(value, fallback) {
+    if (typeof value === "boolean") {
+      return value;
+    }
+    return fallback;
+  }
+
+  function normalizeInteger(value, fallback, min, max) {
+    let numeric = Number.NaN;
+
+    if (typeof value === "number") {
+      numeric = Math.trunc(value);
+    } else if (typeof value === "string") {
+      numeric = Number.parseInt(value.trim(), 10);
+    }
+
+    if (!Number.isFinite(numeric)) {
+      return fallback;
+    }
+
+    return Math.min(max, Math.max(min, numeric));
   }
 
   function mergeSettings(raw) {
@@ -86,6 +122,33 @@
       for (const key of Object.keys(merged.card)) {
         merged.card[key] = normalizeString(raw.card[key]);
       }
+    }
+
+    if (raw.autoFill && typeof raw.autoFill === "object") {
+      merged.autoFill.enabled = normalizeBoolean(
+        raw.autoFill.enabled,
+        merged.autoFill.enabled
+      );
+      merged.autoFill.runPurchase = normalizeBoolean(
+        raw.autoFill.runPurchase,
+        merged.autoFill.runPurchase
+      );
+      merged.autoFill.runCard = normalizeBoolean(
+        raw.autoFill.runCard,
+        merged.autoFill.runCard
+      );
+      merged.autoFill.retryMaxAttempts = normalizeInteger(
+        raw.autoFill.retryMaxAttempts,
+        merged.autoFill.retryMaxAttempts,
+        AUTO_FILL_MIN_ATTEMPTS,
+        AUTO_FILL_MAX_ATTEMPTS
+      );
+      merged.autoFill.retryBaseDelayMs = normalizeInteger(
+        raw.autoFill.retryBaseDelayMs,
+        merged.autoFill.retryBaseDelayMs,
+        AUTO_FILL_MIN_DELAY_MS,
+        AUTO_FILL_MAX_DELAY_MS
+      );
     }
 
     return merged;
@@ -162,6 +225,18 @@
     }
   }
 
+  function isElementValueEmpty(element) {
+    if (!element) {
+      return true;
+    }
+
+    if (typeof element.value !== "string") {
+      return true;
+    }
+
+    return element.value.trim() === "";
+  }
+
   function normalizePurchaseFieldValue(key, rawValue) {
     const value = normalizeString(rawValue);
     if (!value) {
@@ -214,6 +289,11 @@
         continue;
       }
 
+      if (!isElementValueEmpty(element)) {
+        filled += 1;
+        continue;
+      }
+
       if (setFieldValue(element, value)) {
         filled += 1;
       } else {
@@ -227,9 +307,14 @@
       const radio = document.querySelector(
         `input[name="personalInfo.genderType"][value="${gender}"]`
       );
+      const checked = document.querySelector(
+        'input[name="personalInfo.genderType"]:checked'
+      );
 
       if (!radio) {
         missing += 1;
+      } else if (checked) {
+        filled += 1;
       } else {
         if (!radio.checked) {
           radio.click();
@@ -258,6 +343,11 @@
       const element = targetDocument.querySelector(field.selector);
       if (!element) {
         missing += 1;
+        continue;
+      }
+
+      if (!isElementValueEmpty(element)) {
+        filled += 1;
         continue;
       }
 
@@ -362,6 +452,11 @@
       const element = querySelectorInDocuments(documents, field.selector);
       if (!element) {
         missing += 1;
+        continue;
+      }
+
+      if (!isElementValueEmpty(element)) {
+        filled += 1;
         continue;
       }
 
@@ -501,6 +596,29 @@
     return new Promise((resolve) => window.setTimeout(resolve, ms));
   }
 
+  function resolveRetryConfig(autoFillSettings) {
+    const defaults = DEFAULT_SETTINGS.autoFill;
+    const raw =
+      autoFillSettings && typeof autoFillSettings === "object"
+        ? autoFillSettings
+        : {};
+
+    return {
+      maxAttempts: normalizeInteger(
+        raw.retryMaxAttempts,
+        defaults.retryMaxAttempts,
+        AUTO_FILL_MIN_ATTEMPTS,
+        AUTO_FILL_MAX_ATTEMPTS
+      ),
+      baseDelayMs: normalizeInteger(
+        raw.retryBaseDelayMs,
+        defaults.retryBaseDelayMs,
+        AUTO_FILL_MIN_DELAY_MS,
+        AUTO_FILL_MAX_DELAY_MS
+      )
+    };
+  }
+
   function ensureNewCardModeSelected() {
     const radio = document.querySelector(
       'input[name="revalidateCreditCard"][value="new"]'
@@ -518,7 +636,35 @@
     return { present: true, selected: Boolean(radio.checked) };
   }
 
-  async function fillCardFormWithRetry(cardSettings) {
+  async function fillPurchaseFormWithRetry(purchaseSettings, retryConfig) {
+    const resolvedRetry = retryConfig || resolveRetryConfig();
+    let latestResult = {
+      configured: 0,
+      filled: 0,
+      missing: 0
+    };
+
+    for (let attempt = 0; attempt < resolvedRetry.maxAttempts; attempt += 1) {
+      latestResult = fillPurchaseForm(purchaseSettings);
+      if (
+        latestResult.configured === 0 ||
+        latestResult.filled >= latestResult.configured
+      ) {
+        return latestResult;
+      }
+
+      await sleep(resolvedRetry.baseDelayMs);
+    }
+
+    return latestResult;
+  }
+
+  async function fillCardFormWithRetry(cardSettings, retryConfig) {
+    const resolvedRetry = retryConfig || resolveRetryConfig();
+    const delayedFrameTimeout = Math.max(
+      AUTO_FILL_MIN_DELAY_MS,
+      Math.floor(resolvedRetry.baseDelayMs * 0.68)
+    );
     let latestResult = {
       configured: 0,
       filled: 0,
@@ -532,12 +678,14 @@
       frameMessageResponders: 0
     };
 
-    for (let attempt = 0; attempt < 20; attempt += 1) {
+    for (let attempt = 0; attempt < resolvedRetry.maxAttempts; attempt += 1) {
       const cardMode = ensureNewCardModeSelected();
+      const timeoutMs =
+        attempt < 4 ? resolvedRetry.baseDelayMs : delayedFrameTimeout;
       const localResult = fillCardFormLocalAndSameOrigin(cardSettings);
       const frameMessageResult = await requestCardFillViaMessages(
         cardSettings,
-        attempt < 4 ? 220 : 140
+        timeoutMs
       );
       latestResult = combineCardResults(localResult, frameMessageResult);
       latestResult.newCardModePresent = cardMode.present;
@@ -550,7 +698,7 @@
         return latestResult;
       }
 
-      await sleep(attempt < 4 ? 220 : 150);
+      await sleep(timeoutMs);
     }
 
     return latestResult;
@@ -675,31 +823,84 @@
     };
   }
 
+  function logCardDiagnostics(result, contextLabel) {
+    if (result.filled > 0) {
+      return;
+    }
+
+    console.info(`[自動入力診断] ${contextLabel}`, {
+      fincodeFramePresent: result.fincodeFramePresent,
+      fincodeFrameAccessible: result.fincodeFrameAccessible,
+      newCardModePresent: result.newCardModePresent,
+      newCardModeSelected: result.newCardModeSelected,
+      frameMessageSent: result.frameMessageSent,
+      frameMessageResponders: result.frameMessageResponders,
+      inaccessibleFrames: result.inaccessibleFrames
+    });
+  }
+
   async function onPurchaseButtonClick() {
     const settings = await loadSettings();
-    const result = fillPurchaseForm(settings.purchase);
+    const retryConfig = resolveRetryConfig(settings.autoFill);
+    const result = await fillPurchaseFormWithRetry(
+      settings.purchase,
+      retryConfig
+    );
     const message = resultToMessage("購入者情報", result);
     showToast(message.text, message.type);
   }
 
   async function onCardButtonClick() {
     const settings = await loadSettings();
-    const result = await fillCardFormWithRetry(settings.card);
-
-    if (result.filled === 0) {
-      console.info("[自動入力診断] カード", {
-        fincodeFramePresent: result.fincodeFramePresent,
-        fincodeFrameAccessible: result.fincodeFrameAccessible,
-        newCardModePresent: result.newCardModePresent,
-        newCardModeSelected: result.newCardModeSelected,
-        frameMessageSent: result.frameMessageSent,
-        frameMessageResponders: result.frameMessageResponders,
-        inaccessibleFrames: result.inaccessibleFrames
-      });
-    }
+    const retryConfig = resolveRetryConfig(settings.autoFill);
+    const result = await fillCardFormWithRetry(settings.card, retryConfig);
+    logCardDiagnostics(result, "カード");
 
     const message = resultToMessage("カード情報", result);
     showToast(message.text, message.type);
+  }
+
+  async function runAutoFillIfEnabled() {
+    if (hasAutoFillRun || autoFillInProgress) {
+      return;
+    }
+
+    autoFillInProgress = true;
+
+    try {
+      const settings = await loadSettings();
+      const autoFill = settings.autoFill || {};
+
+      if (!autoFill.enabled) {
+        return;
+      }
+
+      const retryConfig = resolveRetryConfig(autoFill);
+
+      if (autoFill.runPurchase) {
+        const purchaseResult = await fillPurchaseFormWithRetry(
+          settings.purchase,
+          retryConfig
+        );
+        const purchaseMessage = resultToMessage("購入者情報", purchaseResult);
+        showToast(`自動入力: ${purchaseMessage.text}`, purchaseMessage.type);
+      }
+
+      if (autoFill.runCard) {
+        const cardResult = await fillCardFormWithRetry(
+          settings.card,
+          retryConfig
+        );
+        logCardDiagnostics(cardResult, "カード(自動)");
+        const cardMessage = resultToMessage("カード情報", cardResult);
+        showToast(`自動入力: ${cardMessage.text}`, cardMessage.type);
+      }
+    } catch (error) {
+      console.warn("[自動入力診断] 自動実行に失敗しました。", error);
+    } finally {
+      hasAutoFillRun = true;
+      autoFillInProgress = false;
+    }
   }
 
   function createButton(label, variant, onClick) {
@@ -744,12 +945,17 @@
       return;
     }
 
+    const onTargetPageReady = () => {
+      mountOverlayButtons();
+      void runAutoFillIfEnabled();
+    };
+
     if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", mountOverlayButtons, {
+      document.addEventListener("DOMContentLoaded", onTargetPageReady, {
         once: true
       });
     } else {
-      mountOverlayButtons();
+      onTargetPageReady();
     }
   }
 
