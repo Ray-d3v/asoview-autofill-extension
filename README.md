@@ -9,12 +9,24 @@
 
 入力値はオプション画面で変更できます。
 
-## インストール（開発者モード）
+## GitHub から使う手順（ZIP）
 
-1. `chrome://extensions/` を開く
-2. 右上の「デベロッパーモード」を ON
-3. 「パッケージ化されていない拡張機能を読み込む」
-4. このフォルダを選択
+1. GitHub のリポジトリを開く  
+   `https://github.com/Ray-d3v/asoview-autofill-extension`
+2. `Code` → `Download ZIP` でダウンロード
+3. ダウンロードした ZIP を解凍
+4. Chrome で `chrome://extensions/` を開く
+5. 右上の「デベロッパーモード」を ON
+6. 「パッケージ化されていない拡張機能を読み込む」を押す
+7. 解凍したフォルダのうち、`manifest.json` がある階層を選ぶ
+
+## ローカルフォルダから使う手順（開発者モード）
+
+1. このリポジトリをローカルに配置（clone か ZIP 解凍）
+2. Chrome で `chrome://extensions/` を開く
+3. 右上の「デベロッパーモード」を ON
+4. 「パッケージ化されていない拡張機能を読み込む」
+5. `manifest.json` があるフォルダを選択
 
 ## 単一ファイル配布（zip）
 
